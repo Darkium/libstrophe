@@ -34,20 +34,22 @@ noinst_HEADERS = strophepp.h
 EXTRA_DIST = docs
 
 ## Examples
-noinst_PROGRAMS = examples/active examples/roster examples/basic examples/bot
+noinst_PROGRAMS = examples/active examples/roster examples/basic examples/bot examples/facebook
 examples_active_SOURCES = examples/active.c
 examples_active_CFLAGS = $(STROPHE_FLAGS)
-examples_active_LDADD = $(STROPHE_LIBS) 
+examples_active_LDADD = $(STROPHE_LIBS)
 examples_roster_SOURCES = examples/roster.c
 examples_roster_CFLAGS = $(STROPHE_FLAGS)
-examples_roster_LDADD = $(STROPHE_LIBS) 
+examples_roster_LDADD = $(STROPHE_LIBS)
 examples_basic_SOURCES = examples/basic.c
 examples_basic_CFLAGS = $(STROPHE_FLAGS)
-examples_basic_LDADD = $(STROPHE_LIBS) 
+examples_basic_LDADD = $(STROPHE_LIBS)
 examples_bot_SOURCES = examples/bot.c
 examples_bot_CFLAGS = $(STROPHE_FLAGS)
-examples_bot_LDADD = $(STROPHE_LIBS) 
-
+examples_bot_LDADD = $(STROPHE_LIBS)
+examples_facebook_SOURCES = examples/facebook.c
+examples_facebook_CFLAGS = $(STROPHE_FLAGS)
+examples_facebook_LDADD = $(STROPHE_LIBS)
 
 ## Tests
 TESTS = tests/check_parser

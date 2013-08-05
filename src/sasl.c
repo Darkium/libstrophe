@@ -1,7 +1,7 @@
 /* sasl.c
 ** strophe XMPP client library -- SASL authentication helpers
-** 
-** Copyright (C) 2005-2009 Collecta, Inc. 
+**
+** Copyright (C) 2005-2009 Collecta, Inc.
 **
 **  This software is provided AS-IS with no warranty, either express
 **  or implied.
@@ -44,7 +44,7 @@ char *sasl_plain(xmpp_ctx_t *ctx, const char *authid, const char *password) {
     int idlen, passlen;
     char *result = NULL;
     char *msg;
-    
+
     /* our message is Base64(authzid,\0,authid,\0,password)
        if there is no authzid, that field is left empty */
 
@@ -95,7 +95,7 @@ static char *_make_quoted(xmpp_ctx_t *ctx, const char *s)
 }
 
 /* split key, value pairs into a hash */
-static hash_t *_parse_digest_challenge(xmpp_ctx_t *ctx, const char *msg)
+static hash_t *_parse_digest_challenge(xmpp_ctx_t *ctx, const char *msg, const char separator )
 {
     hash_t *result;
     unsigned char *text;
@@ -104,51 +104,50 @@ static hash_t *_parse_digest_challenge(xmpp_ctx_t *ctx, const char *msg)
 
     text = base64_decode(ctx, msg, strlen(msg));
     if (text == NULL) {
-	xmpp_error(ctx, "SASL", "couldn't Base64 decode challenge!");
-	return NULL;
+        xmpp_error(ctx, "SASL", "couldn't Base64 decode challenge!");
+        return NULL;
     }
 
     result = hash_new(ctx, 10, xmpp_free);
     if (result != NULL) {
-	s = text;
-	while (*s != '\0') {
-	    /* skip any leading commas and spaces */
-	    while ((*s == ',') || (*s == ' ')) s++;
-	    /* accumulate a key ending at '=' */
-	    t = s;
-	    while ((*t != '=') && (*t != '\0')) t++;
-	    if (*t == '\0') break; /* bad string */
-	    key = _make_string(ctx, (char *)s, (t-s));
-	    if (key == NULL) break;
+        s = text;
+        while (*s != '\0') {
+            /* skip any leading commas and spaces */
+            while ((*s == separator) || (*s == ' ')) s++;
+            /* accumulate a key ending at '=' */
+            t = s;
+            while ((*t != '=') && (*t != '\0')) t++;
+            if (*t == '\0') break; /* bad string */
+            key = _make_string(ctx, (char *) s, (t - s));
+            if (key == NULL) break;
             /* advance our start pointer past the key */
-	    s = t + 1;
-	    t = s;
-	    /* if we see quotes, grab the string in between */
-	    if ((*s == '\'') || (*s == '"')) {
-		t++;
-		while ((*t != *s) && (*t != '\0'))
-		    t++;
-		value = _make_string(ctx, (char *)s+1, (t-s-1));
-		if (*t == *s) {
-		    s = t + 1;
-		} else {
-		    s = t;
-		}
-	    /* otherwise, accumulate a value ending in ',' or '\0' */
-	    } else {
-		while ((*t != ',') && (*t != '\0')) t++;
-		value = _make_string(ctx, (char *)s, (t-s));
-		s = t;
-	    }
-	    if (value == NULL) {
-		xmpp_free(ctx, key);
-		break;
-	    }
-	    /* TODO: check for collisions per spec */
-	    hash_add(result, key, value);
-	    /* hash table now owns the value, free the key */
-	    xmpp_free(ctx, key);
-	}
+            s = t + 1;
+            t = s;
+            /* if we see quotes, grab the string in between */
+            if ((*s == '\'') || (*s == '"')) {
+                t++;
+                while ((*t != *s) && (*t != '\0')) t++;
+                value = _make_string(ctx, (char *) s + 1, (t - s - 1));
+                if (*t == *s) {
+                    s = t + 1;
+                } else {
+                    s = t;
+                }
+                /* otherwise, accumulate a value ending in ',' or '\0' */
+            } else {
+                while ((*t != separator) && (*t != '\0')) t++;
+                value = _make_string(ctx, (char *) s, (t - s));
+                s = t;
+            }
+            if (value == NULL) {
+                xmpp_free(ctx, key);
+                break;
+            }
+            /* TODO: check for collisions per spec */
+            hash_add(result, key, value);
+            /* hash table now owns the value, free the key */
+            xmpp_free(ctx, key);
+        }
     }
     xmpp_free(ctx, text);
 
@@ -168,18 +167,18 @@ static void _digest_to_hex(const char *digest, char *hex)
 }
 
 /** append 'key="value"' to a buffer, growing as necessary */
-static char *_add_key(xmpp_ctx_t *ctx, hash_t *table, const char *key, 
-		      char *buf, int *len, int quote)
+static char *_add_key(xmpp_ctx_t *ctx, hash_t *table, const char *key,
+                      char *buf, int *len, int quote, const char separator)
 {
-    int olen,nlen;
+    int olen, nlen;
     int keylen, valuelen;
     const char *value, *qvalue;
     char *c;
 
     /* allocate a zero-length string if necessary */
     if (buf == NULL) {
-	buf = xmpp_alloc(ctx, 1);
-	buf[0] = '\0';
+        buf = xmpp_alloc(ctx, 1);
+        buf[0] = '\0';
     }
     if (buf == NULL) return NULL;
 
@@ -187,31 +186,33 @@ static char *_add_key(xmpp_ctx_t *ctx, hash_t *table, const char *key,
     olen = strlen(buf);
     value = hash_get(table, key);
     if (value == NULL) {
-	xmpp_error(ctx, "SASL", "couldn't retrieve value for '%s'", key);
-	value = "";
+        xmpp_error(ctx, "SASL", "couldn't retrieve value for '%s'", key);
+        value = "";
     }
     if (quote) {
-	qvalue = _make_quoted(ctx, value);
+        qvalue = _make_quoted(ctx, value);
     } else {
-	qvalue = value;
+        qvalue = value;
     }
     /* added length is key + '=' + value */
     /*   (+ ',' if we're not the first entry   */
     keylen = strlen(key);
     valuelen = strlen(qvalue);
     nlen = (olen ? 1 : 0) + keylen + 1 + valuelen + 1;
-    buf = xmpp_realloc(ctx, buf, olen+nlen);
+    buf = xmpp_realloc(ctx, buf, olen + nlen);
 
     if (buf != NULL) {
-	c = buf + olen;
-	if (olen) *c++ = ',';
-	memcpy(c, key, keylen); c += keylen;
-	*c++ = '=';
-	memcpy(c, qvalue, valuelen); c += valuelen;
-	*c++ = '\0';
+        c = buf + olen;
+        if (olen) *c++ = separator;
+        memcpy(c, key, keylen);
+        c += keylen;
+        *c++ = '=';
+        memcpy(c, qvalue, valuelen);
+        c += valuelen;
+        *c++ = '\0';
     }
 
-    if (quote) xmpp_free(ctx, (char *)qvalue);
+    if (quote) xmpp_free(ctx, (char *) qvalue);
 
     return buf;
 }
@@ -229,7 +230,7 @@ char *sasl_digest_md5(xmpp_ctx_t *ctx, const char *challenge,
     unsigned char digest[16], HA1[16], HA2[16];
     char hex[32];
 
-    /* our digest response is 
+    /* our digest response is
 	Hex( KD( HEX(MD5(A1)),
 	  nonce ':' nc ':' cnonce ':' qop ':' HEX(MD5(A2))
 	))
@@ -241,7 +242,7 @@ char *sasl_digest_md5(xmpp_ctx_t *ctx, const char *challenge,
        If there is an authzid it is ':'-appended to A1 */
 
     /* parse the challenge */
-    table = _parse_digest_challenge(ctx, challenge);
+    table = _parse_digest_challenge(ctx, challenge, ',');
     if (table == NULL) {
 	xmpp_error(ctx, "SASL", "couldn't parse digest challenge");
 	return NULL;
@@ -269,7 +270,7 @@ char *sasl_digest_md5(xmpp_ctx_t *ctx, const char *challenge,
     memcpy(value+5, domain, strlen(domain));
     value[5+strlen(domain)] = '\0';
     hash_add(table, "digest-uri", value);
-    
+
     /* generate response */
 
     /* construct MD5(node : realm : password) */
@@ -339,16 +340,16 @@ char *sasl_digest_md5(xmpp_ctx_t *ctx, const char *challenge,
     /* construct reply */
     result = NULL;
     rlen = 0;
-    result = _add_key(ctx, table, "username", result, &rlen, 1); 
-    result = _add_key(ctx, table, "realm", result, &rlen, 1); 
-    result = _add_key(ctx, table, "nonce", result, &rlen, 1); 
-    result = _add_key(ctx, table, "cnonce", result, &rlen, 1); 
-    result = _add_key(ctx, table, "nc", result, &rlen, 0); 
-    result = _add_key(ctx, table, "qop", result, &rlen, 0); 
-    result = _add_key(ctx, table, "digest-uri", result, &rlen, 1); 
-    result = _add_key(ctx, table, "response", result, &rlen, 0); 
-    result = _add_key(ctx, table, "charset", result, &rlen, 0);
- 
+    result = _add_key(ctx, table, "username", result, &rlen, 1, ',');
+    result = _add_key(ctx, table, "realm", result, &rlen, 1, ',');
+    result = _add_key(ctx, table, "nonce", result, &rlen, 1, ',');
+    result = _add_key(ctx, table, "cnonce", result, &rlen, 1, ',');
+    result = _add_key(ctx, table, "nc", result, &rlen, 0, ',');
+    result = _add_key(ctx, table, "qop", result, &rlen, 0, ',');
+    result = _add_key(ctx, table, "digest-uri", result, &rlen, 1, ',');
+    result = _add_key(ctx, table, "response", result, &rlen, 0, ',');
+    result = _add_key(ctx, table, "charset", result, &rlen, 0, ',');
+
     xmpp_free(ctx, node);
     xmpp_free(ctx, domain);
     hash_release(table); /* also frees value strings */
@@ -360,6 +361,46 @@ char *sasl_digest_md5(xmpp_ctx_t *ctx, const char *challenge,
     return response;
 }
 
+/** generate auth response string for the SASL DIGEST-FACEBOOK mechanism */
+char *sasl_digest_facebook(xmpp_ctx_t *ctx, const char *challenge,
+        const char *jid, const char *access_token, const char *app_id) {
+    hash_t *table;
+    char *result = NULL;
+    char *response;
+    int rlen;
+
+    /* parse the challenge */
+
+    table = _parse_digest_challenge(ctx, challenge, '&');
+    if (table == NULL) {
+        xmpp_error(ctx, "SASL", "couldn't parse digest challenge");
+        return NULL;
+    }
+
+    /* add our response fields */
+    hash_add(table, "access_token", xmpp_strdup(ctx, access_token));
+    hash_add(table, "api_key", xmpp_strdup(ctx, app_id));
+    hash_add(table, "call_id", xmpp_strdup(ctx, xmpp_strdup(ctx, "0")));
+    hash_add(table, "v", xmpp_strdup(ctx, xmpp_strdup(ctx, "1.0")));
+
+    /* construct reply */
+    result = NULL;
+    rlen = 0;
+    result = _add_key(ctx, table, "method", result, &rlen, 0, '&');
+    result = _add_key(ctx, table, "nonce", result, &rlen, 0, '&');
+    result = _add_key(ctx, table, "access_token", result, &rlen, 0, '&');
+    result = _add_key(ctx, table, "api_key", result, &rlen, 0, '&');
+    result = _add_key(ctx, table, "call_id", result, &rlen, 0, '&');
+    result = _add_key(ctx, table, "v", result, &rlen, 0, '&');
+
+    hash_release(table); /* also frees value strings */
+
+    /* reuse response for the base64 encode of our result */
+    response = base64_encode(ctx, (unsigned char *) result, strlen(result));
+    xmpp_free(ctx, result);
+
+    return response;
+}
 
 /** Base64 encoding routines. Implemented according to RFC 3548 */
 
@@ -381,7 +422,7 @@ static const char _base64_invcharmap[256] = {
     65,65,65,65, 65,65,65,65, 65,65,65,65, 65,65,65,65,
     65,65,65,65, 65,65,65,65, 65,65,65,65, 65,65,65,65,
     65,65,65,65, 65,65,65,65, 65,65,65,65, 65,65,65,65,
-    65,65,65,65, 65,65,65,65, 65,65,65,65, 65,65,65,65 
+    65,65,65,65, 65,65,65,65, 65,65,65,65, 65,65,65,65
 };
 
 /** map of all 6-bit values to their corresponding byte
@@ -404,7 +445,7 @@ int base64_encoded_len(xmpp_ctx_t *ctx, const unsigned len)
     return ((len + 2)/3) << 2;
 }
 
-char *base64_encode(xmpp_ctx_t *ctx, 
+char *base64_encode(xmpp_ctx_t *ctx,
 		    const unsigned char * const buffer, const unsigned len)
 {
     int clen;
@@ -458,7 +499,7 @@ char *base64_encode(xmpp_ctx_t *ctx,
     return cbuf;
 }
 
-int base64_decoded_len(xmpp_ctx_t *ctx, 
+int base64_decoded_len(xmpp_ctx_t *ctx,
 		       const char * const buffer, const unsigned len)
 {
     int nudge;
@@ -474,11 +515,11 @@ int base64_decoded_len(xmpp_ctx_t *ctx,
 	else if (c == 64) {
 	    c = _base64_invcharmap[(int)buffer[len-3]];
 	    if (c < 64) nudge = 2;
-	} 
+	}
     }
     if (nudge < 0) return 0; /* reject bad coding */
 
-    /* decoded steam is 3 bytes for every four */ 
+    /* decoded steam is 3 bytes for every four */
     return 3 * (len >> 2) - nudge;
 }
 
@@ -539,15 +580,15 @@ unsigned char *base64_decode(xmpp_ctx_t *ctx,
 		/* redo the last quartet, checking for correctness */
 		hextet = _base64_invcharmap[(int)buffer[len-4]];
 		if (hextet & 0xC0) goto _base64_decode_error;
-		word = hextet << 10;		
+		word = hextet << 10;
 		hextet = _base64_invcharmap[(int)buffer[len-3]];
 		if (hextet & 0xC0) goto _base64_decode_error;
-		word |= hextet << 4;		
+		word |= hextet << 4;
 		hextet = _base64_invcharmap[(int)buffer[len-2]];
 		if (hextet & 0xC0) goto _base64_decode_error;
 		word |= hextet >> 2;
 		*d++ = (word & 0xFF00) >> 8;
-		*d++ = (word & 0x00FF);		
+		*d++ = (word & 0x00FF);
 		hextet = _base64_invcharmap[(int)buffer[len-1]];
 		if (hextet != 64) goto _base64_decode_error;
 		break;
@@ -556,7 +597,7 @@ unsigned char *base64_decode(xmpp_ctx_t *ctx,
     *d = '\0';
     return dbuf;
 
-_base64_decode_error:	
+_base64_decode_error:
     /* invalid character; abort decoding! */
     xmpp_free(ctx, dbuf);
     return NULL;
@@ -579,7 +620,7 @@ int test_charmap_identity(void)
 	if (u != i) return 1;
     }
 
-    return 0; 
+    return 0;
 }
 
 int test_charmap_range(void)

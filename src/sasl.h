@@ -1,7 +1,7 @@
 /* sasl.h
 ** strophe XMPP client library -- SASL authentication helpers
-** 
-** Copyright (C) 2005-2009 Collecta, Inc. 
+**
+** Copyright (C) 2005-2009 Collecta, Inc.
 **
 **  This software is provided AS-IS with no warranty, either express
 **  or implied.
@@ -26,13 +26,14 @@
 char *sasl_plain(xmpp_ctx_t *ctx, const char *authid, const char *password);
 char *sasl_digest_md5(xmpp_ctx_t *ctx, const char *challenge,
 		      const char *jid, const char *password);
-
+char *sasl_digest_facebook(xmpp_ctx_t *ctx, const char *challenge,
+		      const char *jid, const char *access_token, const char *app_id);
 
 /** Base64 encoding routines. Implemented according to RFC 3548 */
 
 int base64_encoded_len(xmpp_ctx_t *ctx, const unsigned len);
 
-char *base64_encode(xmpp_ctx_t *ctx, 
+char *base64_encode(xmpp_ctx_t *ctx,
 		    const unsigned char * const buffer, const unsigned len);
 
 int base64_decoded_len(xmpp_ctx_t *ctx,

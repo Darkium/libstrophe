@@ -1,7 +1,7 @@
 /* common.h
 ** strophe XMPP client library -- internal common structures
 **
-** Copyright (C) 2005-2009 Collecta, Inc. 
+** Copyright (C) 2005-2009 Collecta, Inc.
 **
 **  This software is provided AS-IS with no warranty, either express or
 **  implied.
@@ -57,14 +57,14 @@ struct _xmpp_ctx_t {
 
 /* convenience functions for accessing the context */
 void *xmpp_alloc(const xmpp_ctx_t * const ctx, const size_t size);
-void *xmpp_realloc(const xmpp_ctx_t * const ctx, void *p, 
+void *xmpp_realloc(const xmpp_ctx_t * const ctx, void *p,
 		   const size_t size);
 char *xmpp_strdup(const xmpp_ctx_t * const ctx, const char * const s);
 
-void xmpp_log(const xmpp_ctx_t * const ctx, 
+void xmpp_log(const xmpp_ctx_t * const ctx,
 	      const xmpp_log_level_t level,
 	      const char * const area,
-	      const char * const fmt, 
+	      const char * const fmt,
 	      va_list ap);
 
 /* wrappers for xmpp_log at specific levels */
@@ -147,6 +147,7 @@ struct _xmpp_handlist_t {
 #define SASL_MASK_PLAIN 0x01
 #define SASL_MASK_DIGESTMD5 0x02
 #define SASL_MASK_ANONYMOUS 0x04
+#define SASL_MASK_FACEBOOK 0x06
 
 typedef void (*xmpp_open_handler)(xmpp_conn_t * const conn);
 
@@ -165,8 +166,8 @@ struct _xmpp_conn_t {
     int tls_support;
     int tls_disabled;
     int tls_failed; /* set when tls fails, so we don't try again */
-    int sasl_support; /* if true, field is a bitfield of supported 
-			 mechanisms */ 
+    int sasl_support; /* if true, field is a bitfield of supported
+			 mechanisms */
     int secured; /* set when stream is secured with TLS */
 
     /* if server returns <bind/> or <session/> we must do them */
@@ -179,6 +180,7 @@ struct _xmpp_conn_t {
     char *connectport;
     char *jid;
     char *pass;
+    char *app_id;
     char *bound_jid;
     char *stream_id;
 
@@ -196,14 +198,14 @@ struct _xmpp_conn_t {
     /* timeouts */
     unsigned int connect_timeout;
 
-    /* event handlers */    
+    /* event handlers */
 
     /* stream open handler */
     xmpp_open_handler open_handler;
 
     /* user handlers only get called after authentication */
     int authenticated;
-    
+
     /* connection events handler */
     xmpp_conn_handler conn_handler;
     void *userdata;
@@ -232,7 +234,7 @@ struct _xmpp_stanza_t {
     xmpp_ctx_t *ctx;
 
     xmpp_stanza_type_t type;
-    
+
     xmpp_stanza_t *prev;
     xmpp_stanza_t *next;
     xmpp_stanza_t *children;
