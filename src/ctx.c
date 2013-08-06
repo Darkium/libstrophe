@@ -253,7 +253,8 @@ void xmpp_log(const xmpp_ctx_t * const ctx,
     va_list copy;
 
     buf = smbuf;
-    va_copy(copy, ap);
+	copy = ap;
+    // va_copy(copy, ap);
     ret = xmpp_vsnprintf(buf, 1023, fmt, ap);
     if (ret > 1023) {
 	buf = (char *)xmpp_alloc(ctx, ret + 1);
