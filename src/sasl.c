@@ -380,8 +380,8 @@ char *sasl_digest_facebook(xmpp_ctx_t *ctx, const char *challenge,
     /* add our response fields */
     hash_add(table, "access_token", xmpp_strdup(ctx, access_token));
     hash_add(table, "api_key", xmpp_strdup(ctx, app_id));
-    hash_add(table, "call_id", xmpp_strdup(ctx, xmpp_strdup(ctx, "0")));
-    hash_add(table, "v", xmpp_strdup(ctx, xmpp_strdup(ctx, "1.0")));
+    hash_add(table, "call_id", xmpp_strdup(ctx, "0"));
+    hash_add(table, "v", xmpp_strdup(ctx, "1.0"));
 
     /* construct reply */
     result = NULL;

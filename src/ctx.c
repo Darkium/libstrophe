@@ -228,6 +228,10 @@ void *xmpp_realloc(const xmpp_ctx_t * const ctx, void *p,
     return ctx->mem->realloc(p, size, ctx->mem->userdata);
 }
 
+#ifdef WIN32
+#define va_copy(dst, src) (dst = src)
+#endif
+
 /** Write a log message to the logger.
  *  Write a log message to the logger for the context for the specified
  *  level and area.  This function takes a printf-style format string and a
@@ -253,8 +257,7 @@ void xmpp_log(const xmpp_ctx_t * const ctx,
     va_list copy;
 
     buf = smbuf;
-	copy = ap;
-    // va_copy(copy, ap);
+    va_copy(copy, ap);
     ret = xmpp_vsnprintf(buf, 1023, fmt, ap);
     if (ret > 1023) {
 	buf = (char *)xmpp_alloc(ctx, ret + 1);

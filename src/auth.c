@@ -389,13 +389,14 @@ static int _handle_digestmd5_challenge(xmpp_conn_t * const conn,
 
 /* handle the challenge phase of digest auth */
 static int _handle_facebook_challenge(xmpp_conn_t * const conn,
-    xmpp_stanza_t * const stanza,
-    void * const userdata) {
-
-    char *text;
-    char *response;
-    xmpp_stanza_t *auth, *authdata;
-    char *name;
+				      xmpp_stanza_t * const stanza,
+				      void * const userdata)
+{
+    char *text = NULL;
+    char *response = NULL;
+    xmpp_stanza_t *auth = NULL, *authdata = NULL;
+    char *name = NULL;
+    int result = 1;
 
     name = xmpp_stanza_get_name(stanza);
     xmpp_debug(conn->ctx, "xmpp",\
@@ -406,14 +407,15 @@ static int _handle_facebook_challenge(xmpp_conn_t * const conn,
         response = sasl_digest_facebook(conn->ctx, text, conn->jid, conn->pass, conn->app_id);
         if (!response) {
             disconnect_mem_error(conn);
-            return 0;
+	    result = 0;
+	    goto exit;
         }
-        xmpp_free(conn->ctx, text);
 
         auth = xmpp_stanza_new(conn->ctx);
         if (!auth) {
             disconnect_mem_error(conn);
-            return 0;
+	    result = 0;
+	    goto exit;
         }
         xmpp_stanza_set_name(auth, "response");
         xmpp_stanza_set_ns(auth, XMPP_NS_SASL);
@@ -421,21 +423,25 @@ static int _handle_facebook_challenge(xmpp_conn_t * const conn,
         authdata = xmpp_stanza_new(conn->ctx);
         if (!authdata) {
             disconnect_mem_error(conn);
-            return 0;
+	    result = 0;
+	    goto exit;
         }
 
         xmpp_stanza_set_text(authdata, response);
-        xmpp_free(conn->ctx, response);
-
         xmpp_stanza_add_child(auth, authdata);
-        xmpp_stanza_release(authdata);
 
         handler_add(conn, _handle_digestmd5_rspauth,
-            XMPP_NS_SASL, NULL, NULL, NULL);
+		    XMPP_NS_SASL, NULL, NULL, NULL);
 
         xmpp_send(conn, auth);
-        xmpp_stanza_release(auth);
 
+	exit:
+	if(response) xmpp_free(conn->ctx, response);
+	if(text) xmpp_free(conn->ctx, text);
+	if(auth) xmpp_stanza_release(auth);
+	if(authdata) xmpp_stanza_release(authdata);
+
+	return result;
     } else {
         return _handle_sasl_result(conn, stanza, "DIGEST-MD5");
     }
@@ -583,7 +589,7 @@ static void _auth(xmpp_conn_t * const conn)
 		return;
 	}
 	handler_add(conn, _handle_facebook_challenge,
-		XMPP_NS_SASL, NULL, NULL, NULL);
+		    XMPP_NS_SASL, NULL, NULL, NULL);
 	xmpp_send(conn, auth);
 	xmpp_stanza_release(auth);
     } else if (conn->sasl_support & SASL_MASK_DIGESTMD5) {
