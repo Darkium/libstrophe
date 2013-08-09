@@ -105,6 +105,7 @@ xmpp_conn_t *xmpp_conn_new(xmpp_ctx_t * const ctx)
 	conn->domain = NULL;
 	conn->jid = NULL;
 	conn->pass = NULL;
+	conn->app_id = NULL;
 	conn->stream_id = NULL;
         conn->bound_jid = NULL;
 
