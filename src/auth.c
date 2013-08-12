@@ -72,6 +72,7 @@ static int _handle_sasl_result(xmpp_conn_t * const conn,
 static int _handle_digestmd5_challenge(xmpp_conn_t * const conn,
 			xmpp_stanza_t * const stanza,
 			void * const userdata);
+
 static int _handle_digestmd5_rspauth(xmpp_conn_t * const conn,
 			xmpp_stanza_t * const stanza,
 			void * const userdata);
@@ -430,9 +431,6 @@ static int _handle_facebook_challenge(xmpp_conn_t * const conn,
         xmpp_stanza_set_text(authdata, response);
         xmpp_stanza_add_child(auth, authdata);
 
-        handler_add(conn, _handle_digestmd5_rspauth,
-		    XMPP_NS_SASL, NULL, NULL, NULL);
-
         xmpp_send(conn, auth);
 
 	exit:
@@ -443,7 +441,7 @@ static int _handle_facebook_challenge(xmpp_conn_t * const conn,
 
 	return result;
     } else {
-        return _handle_sasl_result(conn, stanza, "DIGEST-MD5");
+        return _handle_sasl_result(conn, stanza, "X-FACEBOOK-PLATFORM");
     }
 
     /* remove ourselves */
