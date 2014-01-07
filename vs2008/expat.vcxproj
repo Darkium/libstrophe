@@ -49,8 +49,8 @@
     <TargetName>$(ProjectName)MTD</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>.\Release_static\</OutDir>
-    <IntDir>.\obj\Release_static\</IntDir>
+    <OutDir>.\Release\</OutDir>
+    <IntDir>.\obj\Release</IntDir>
     <TargetName>$(ProjectName)MT</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
